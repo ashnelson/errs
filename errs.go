@@ -7,8 +7,18 @@ import (
 	"strings"
 )
 
-// callDepth is set to 2 in order to ignore the stack trace from this package
-var callDepth = 2
+const noTraceMsg = "Unable to retrieve error stack trace"
+
+var (
+	callDepth int
+	formatter Formatter
+)
+
+func init() {
+	// callDepth defaults to 2 in order to ignore the stack trace from this package
+	callDepth = 2
+	formatter = &DefaultFormatter{}
+}
 
 // tracedError is a wrapper for the standard error object which keeps track of
 // the previous error that was encountered
@@ -52,11 +62,19 @@ func SetCallDepth(depth int) {
 	callDepth = depth
 }
 
+// SetFormatter sets the string formatter that formats each individual error
+// line in the stack trace. The default formatter formats each line as short as
+// possible and looks similar to the following:
+//	filename1.go:func1():123: message1
+//	filename2.go:func2():456: message2
+//	filename3.go:func3():789: message3
+func SetFormatter(fmtr Formatter) {
+	formatter = fmtr
+}
+
 // getFormattedStackTrace gets the caller information (file, function, and line
 // number) and returns it as formatted string
 func getFormattedStackTrace(msg string, args ...interface{}) string {
-	const noTraceMsg = "Unable to retrieve error stack trace"
-
 	// Get caller informtion
 	prgrmCntr, tracedFile, tracedLnNbr, traceReceived := runtime.Caller(callDepth)
 	if !traceReceived || tracedFile == "" || tracedLnNbr < 1 {
@@ -78,6 +96,5 @@ func getFormattedStackTrace(msg string, args ...interface{}) string {
 		tracedFunc = splitFuncName[1]
 	}
 
-	msg = fmt.Sprintf(msg, args...)
-	return fmt.Sprintf("%s:%s():%d: %s", tracedFile, tracedFunc, tracedLnNbr, msg)
+	return formatter.Format(tracedFile, tracedFunc, tracedLnNbr, msg, args...)
 }
