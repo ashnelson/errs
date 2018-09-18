@@ -33,9 +33,9 @@ func (this *tracedError) Error() string {
 }
 
 // New returns a new error with stack trace info added as part of the details
-func New(msg string, args ...interface{}) error {
+func New(msg string) error {
 	return &tracedError{
-		errDetails:  getFormattedStackTrace(msg, args...),
+		errDetails:  getFormattedStackTrace(msg),
 		previousErr: nil,
 	}
 }
@@ -43,13 +43,29 @@ func New(msg string, args ...interface{}) error {
 // Append adds the "prevErr" details to a new error and also includes the stack
 // trace info as part of the details of the new error. If "prevErr" is nil, a
 // new error is returned with just the stack trace info added to the details.
-func Append(prevErr error, msg string, args ...interface{}) error {
+func Append(prevErr error, msg string) error {
 	if prevErr == nil {
-		return New(msg, args...)
+		return New(msg)
 	}
 
 	return &tracedError{
-		errDetails:  fmt.Sprintf("%s;\n%s", prevErr, getFormattedStackTrace(msg, args...)),
+		errDetails:  fmt.Sprintf("%s;\n%s", prevErr, getFormattedStackTrace(msg)),
+		previousErr: prevErr,
+	}
+}
+
+// Appendf adds the "prevErr" details to a new error and also includes the stack
+// trace info as part of the details of the new error. If "prevErr" is nil, a
+// new error is returned with just the stack trace info added to the details.
+func Appendf(prevErr error, msg string, args ...interface{}) error {
+	msg = fmt.Sprintf(msg, args...)
+
+	if prevErr == nil {
+		return New(msg)
+	}
+
+	return &tracedError{
+		errDetails:  fmt.Sprintf("%s;\n%s", prevErr, getFormattedStackTrace(msg)),
 		previousErr: prevErr,
 	}
 }
@@ -74,7 +90,7 @@ func SetFormatter(fmtr Formatter) {
 
 // getFormattedStackTrace gets the caller information (file, function, and line
 // number) and returns it as formatted string
-func getFormattedStackTrace(msg string, args ...interface{}) string {
+func getFormattedStackTrace(msg string) string {
 	// Get caller informtion
 	prgrmCntr, tracedFile, tracedLnNbr, traceReceived := runtime.Caller(callDepth)
 	if !traceReceived || tracedFile == "" || tracedLnNbr < 1 {
@@ -96,5 +112,5 @@ func getFormattedStackTrace(msg string, args ...interface{}) string {
 		tracedFunc = splitFuncName[1]
 	}
 
-	return formatter.Format(tracedFile, tracedFunc, tracedLnNbr, msg, args...)
+	return formatter.Format(tracedFile, tracedFunc, tracedLnNbr, msg)
 }

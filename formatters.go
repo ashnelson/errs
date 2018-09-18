@@ -10,7 +10,7 @@ import (
 // parameters if they aren't needed.
 // For examples on writing a formatter, see DefaultFormatter and JSONFormatter.
 type Formatter interface {
-	Format(tracedFile, tracedFunc string, tracedLnNbr int, msg string, args ...interface{}) string
+	Format(tracedFile, tracedFunc string, tracedLnNbr int, msg string) string
 }
 
 // DefaultFormatter formats the error as a simple string like:
@@ -21,8 +21,7 @@ type DefaultFormatter struct{}
 
 var _ Formatter = &DefaultFormatter{}
 
-func (this *DefaultFormatter) Format(tracedFile, tracedFunc string, tracedLnNbr int, msg string, args ...interface{}) string {
-	msg = fmt.Sprintf(msg, args...)
+func (this *DefaultFormatter) Format(tracedFile, tracedFunc string, tracedLnNbr int, msg string) string {
 	return fmt.Sprintf("%s:%s():%d: %s", tracedFile, tracedFunc, tracedLnNbr, msg)
 }
 
@@ -34,7 +33,7 @@ type JSONFormatter struct{}
 
 var _ Formatter = &JSONFormatter{}
 
-func (this *JSONFormatter) Format(tracedFile, tracedFunc string, tracedLnNbr int, msg string, args ...interface{}) string {
+func (this *JSONFormatter) Format(tracedFile, tracedFunc string, tracedLnNbr int, msg string) string {
 	type Fmtr struct {
 		File    string
 		Func    string
@@ -45,7 +44,7 @@ func (this *JSONFormatter) Format(tracedFile, tracedFunc string, tracedLnNbr int
 		File:    tracedFile,
 		Func:    tracedFunc + "()",
 		LineNbr: tracedLnNbr,
-		Details: fmt.Sprintf(msg, args...),
+		Details: msg,
 	}
 
 	msgJSON, err := json.Marshal(jsonFmtr)
